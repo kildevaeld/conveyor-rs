@@ -1,13 +1,13 @@
 #![feature(async_await, await_macro, futures_api)]
 
 use std::future::Future;
-
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{LocalWaker, Poll};
 
-pub mod error;
+mod error;
 mod macros;
+
 pub use error::*;
 pub use macros::*;
 
@@ -155,7 +155,6 @@ where
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use futures::executor::block_on;
 

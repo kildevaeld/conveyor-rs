@@ -25,7 +25,8 @@ mod tests {
     fn it_works() {
         conveyor![
             station_fn(async move |s: String| Ok(s)),
-            station_fn(async move |s: String| Ok(s))
+            station_fn(async move |s: String| Ok(s)),
+            conveyor![station_fn(async move |s: String| Ok(s))]
         ];
         conveyor![station_fn(async move |s: String| Ok(s))];
     }

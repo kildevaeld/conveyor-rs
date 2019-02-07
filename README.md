@@ -5,15 +5,13 @@
 use conveyor::*;
 
 let chain = conveyor![
-  station_fn(async move |input:String| Ok(input.len())),
-  station_fn(async move |len:i32| Ok(len * 7))
+  station_fn(async move |input: &str| Ok(input.len())),
+  station_fn(async move |len: usize| Ok(len * 7))
 ];
 
-let ans = chain.execute("Hello!");
+let ans = futures::executor::block_on(chain.execute("Hello!"));
 
-assert_eq(ans, 42);
-
-
+assert_eq!(ans.unwrap(), 42);
 
 
 ```

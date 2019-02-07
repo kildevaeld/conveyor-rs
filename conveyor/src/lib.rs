@@ -153,6 +153,35 @@ where
     }
 }
 
+pub fn into_box<S: Station + 'static>(
+    i: S,
+) -> Box<
+    dyn Station<
+        Input = S::Input,
+        Output = S::Output,
+        Future = Pin<Box<dyn Future<Output = Result<S::Output>>>>,
+    >,
+> {
+    Box::new(Boxed { s: i })
+}
+
+struct Boxed<S> {
+    s: S,
+}
+
+impl<S> Station for Boxed<S>
+where
+    S: Station,
+    <S as Station>::Future: 'static,
+{
+    type Input = S::Input;
+    type Output = S::Output;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Output>> + 'static>>;
+    fn execute(&self, input: Self::Input) -> Self::Future {
+        Box::pin(self.s.execute(input))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -174,5 +203,14 @@ mod tests {
         let p = s.execute("Hello".to_string());
         let ret = block_on(p).unwrap();
         assert_eq!(ret, 4);
+    }
+
+    #[test]
+    fn boxed() {
+        let s = station_fn(async move |test: &str| Ok(test));
+        let b = into_box(s);
+
+        let ret = futures::executor::block_on(b.execute("Hello")).unwrap();
+        assert_eq!(ret, "Hello");
     }
 }

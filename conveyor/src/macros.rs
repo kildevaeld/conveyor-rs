@@ -12,7 +12,9 @@ macro_rules! conveyor {
      };
 
      [ $y: expr] => {
-        $y
+        {
+            $y
+        }
      };
 }
 

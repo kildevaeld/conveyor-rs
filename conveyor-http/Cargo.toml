@@ -1,0 +1,17 @@
+[package]
+name = "conveyor-http"
+version = "0.1.0"
+authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+futures = {version = "^0.1"}
+tokio = { version = "^0.1", features = ["async-await-preview"] }
+reqwest = "^0.9"
+conveyor = { path = "../conveyor", features = ["producer"]}
+hyper = "^0.12"
+http = "^0.1"
+
+[[example]]
+name = "http"
+path = "example/http.rs"

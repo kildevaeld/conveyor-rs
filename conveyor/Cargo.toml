@@ -5,7 +5,11 @@ authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+futures-preview = {version = "0.3.0-alpha.12", features = ["compat"]}
+tokio = { version = "^0.1", features = ["async-await-preview"], optional = true }
 
-[dev-dependencies]
-futures-preview = "0.3.0-alpha.12"
+
+[features]
+default = []
+producer = ["tokio"]
 

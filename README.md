@@ -1,6 +1,6 @@
 # conveyor-rs
 
-Needs nightly
+Needs nightly (nightly-2019-01-19-x86_64-apple-darwin)
 
 
 ```rust

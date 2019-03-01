@@ -1,12 +1,17 @@
 #![feature(async_await, await_macro, futures_api)]
 
-use std::future::Future;
+use futures::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::task::{LocalWaker, Poll};
+use std::task::{Poll, Waker as LocalWaker};
 
 mod error;
 mod macros;
+pub mod utils;
+pub use futures;
+
+#[cfg(feature = "producer")]
+pub mod producer;
 
 pub use error::*;
 pub use macros::*;
@@ -14,19 +19,19 @@ pub use macros::*;
 pub trait Station {
     type Input;
     type Output;
-    type Future: Future<Output = Result<Self::Output>>;
+    type Future: Future<Output = Result<Self::Output>> + Send;
     fn execute(&self, input: Self::Input) -> Self::Future;
 }
 
 pub trait Chain: Sized + Station {
-    fn chain<F: Station<Input = Self::Output>>(self, f: F) -> Conveyor<Self, F>;
+    fn chain<F: Station<Input = Self::Output> + Send + Sync>(self, f: F) -> Conveyor<Self, F>;
 }
 
 impl<T> Chain for T
 where
-    T: Station,
+    T: Station + Sync + Send,
 {
-    fn chain<F: Station<Input = Self::Output>>(self, f: F) -> Conveyor<Self, F> {
+    fn chain<F: Station<Input = Self::Output> + Send + Sync>(self, f: F) -> Conveyor<Self, F> {
         Conveyor::new(self, f)
     }
 }
@@ -48,8 +53,8 @@ where
 
 impl<F, N> Conveyor<F, N>
 where
-    F: Station,
-    N: Station<Input = F::Output>,
+    F: Station + Send + Sync,
+    N: Station<Input = F::Output> + Send + Sync,
 {
     pub fn new(f: F, n: N) -> Conveyor<F, N> {
         Conveyor {
@@ -61,8 +66,8 @@ where
 
 impl<F, N> Station for Conveyor<F, N>
 where
-    F: Station,
-    N: Station<Input = F::Output>,
+    F: Station + Send + Sync,
+    N: Station<Input = F::Output> + Send + Sync,
 {
     type Input = F::Input;
     type Output = N::Output;
@@ -159,7 +164,7 @@ pub fn into_box<S: Station + 'static>(
     dyn Station<
         Input = S::Input,
         Output = S::Output,
-        Future = Pin<Box<dyn Future<Output = Result<S::Output>>>>,
+        Future = Pin<Box<dyn Future<Output = Result<S::Output>> + Send>>,
     >,
 > {
     Box::new(Boxed { s: i })
@@ -176,7 +181,7 @@ where
 {
     type Input = S::Input;
     type Output = S::Output;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Output>> + 'static>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Output>> + 'static + Send>>;
     fn execute(&self, input: Self::Input) -> Self::Future {
         Box::pin(self.s.execute(input))
     }

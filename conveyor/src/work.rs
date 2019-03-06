@@ -8,7 +8,7 @@ pub enum WorkOutput<V> {
     Work(Work<V>),
 }
 
-type WorkBox<V> = Box<
+pub type WorkBox<V> = Box<
     Station<
             Input = V,
             Output = Vec<WorkOutput<V>>,

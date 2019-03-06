@@ -1,9 +1,7 @@
 use super::error::Result;
 use super::Station;
-use futures::channel::mpsc::channel;
 use futures::future::{ready, Ready};
 use futures::prelude::*;
-use std::sync::Arc;
 
 pub trait Producer {
     type Item: Send;
@@ -45,6 +43,7 @@ where
 
     pub async fn run(&mut self) -> Vec<Result<C::Output>> {
         let mut out = Vec::new();
+
         loop {
             let next = match await!(self.stream.next()) {
                 None => break,

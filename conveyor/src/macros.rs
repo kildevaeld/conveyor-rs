@@ -5,7 +5,7 @@ macro_rules! conveyor {
             use $crate::Chain;
             let m = $y;
             $(
-                let m = m.chain($x);
+                let m = m.pipe($x);
             )*
             m
         }

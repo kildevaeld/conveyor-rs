@@ -6,10 +6,10 @@ edition = "2018"
 
 [dependencies]
 futures-preview = {version = "0.3.0-alpha.12", features = ["compat"]}
-tokio = { version = "^0.1", features = ["async-await-preview"], optional = true }
-
+crossbeam = "^0.7"
+futures_old = { package = "futures", version = "^0.1" }
 
 [features]
 default = []
-producer = ["tokio"]
-
+producer = []
+work = []

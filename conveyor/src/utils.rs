@@ -1,6 +1,5 @@
-use super::{ConveyorError, Result, Station};
+use super::{Result, Station};
 use futures::future::{ready, Ready};
-use std::thread;
 
 #[derive(Clone, Debug)]
 pub struct ToString;

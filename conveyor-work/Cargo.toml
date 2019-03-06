@@ -1,0 +1,22 @@
+[package]
+name = "conveyor-work"
+version = "0.1.0"
+authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+conveyor = { path = "../conveyor", features = ["work"] }
+conveyor-http = { path = "../conveyor-http", optional = true }
+tokio = { version = "^0.1", features = ["async-await-preview"] }
+serde = "^1.0"
+serde_derive = "^1.0"
+url = { version = "^1.7",features = ["serde"], optional = true }
+url_serde = { version = "^0.2", optional = true }
+hyper_serde = { version = "^0.10", optional = true }
+vfs = { git = "https://github.com/kildevaeld/vfs-rs", features = ["glob"], optional = true }
+
+
+[features]
+default = []
+fs = ["vfs"]
+http = ["url", "url_serde", "hyper_serde", "conveyor-http"]

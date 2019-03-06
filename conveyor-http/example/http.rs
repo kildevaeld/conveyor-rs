@@ -17,7 +17,7 @@ fn main() {
             //     Ok(String::from_utf8(body.to_vec()).unwrap())
             // }));
 
-            let h = h.chain(HttpResponseReader).chain(utils::to_string());
+            let h = h.pipe(HttpResponseReader).pipe(utils::to_string());
             let clone = h.clone();
             let req = Request::new(Method::GET, Url::parse("https://distrowatch.com/").unwrap());
 

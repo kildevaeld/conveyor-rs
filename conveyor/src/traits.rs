@@ -142,6 +142,40 @@ where
     }
 }
 
+pub struct StationFnCtx<F, I, O, Ctx> {
+    inner: F,
+    ctx: Ctx,
+    _i: std::marker::PhantomData<I>,
+    _o: std::marker::PhantomData<O>,
+}
+
+impl<F, I, O, Ctx, U> Station for StationFnCtx<F, I, O, Ctx>
+where
+    F: (Fn(I, &Ctx) -> U) + Send + Sync + std::marker::Unpin,
+    U: Future<Output = Result<O>> + Send + 'static,
+{
+    type Future = U;
+    type Input = I;
+    type Output = O;
+
+    fn execute(&self, input: Self::Input) -> Self::Future {
+        (self.inner)(input, &self.ctx)
+    }
+}
+
+pub fn station_fn_ctx<F, I, O, Ctx: 'static, U>(f: F, ctx: Ctx) -> StationFnCtx<F, I, O, Ctx>
+where
+    F: (Fn(I, &Ctx) -> U) + Send + Sync + std::marker::Unpin,
+    U: Future<Output = Result<O>> + Send + 'static,
+{
+    StationFnCtx {
+        inner: f,
+        ctx: ctx,
+        _i: std::marker::PhantomData,
+        _o: std::marker::PhantomData,
+    }
+}
+
 pub fn into_box<S: Station + 'static + Send + Sync>(
     i: S,
 ) -> Box<
@@ -189,6 +223,15 @@ mod tests {
     #[test]
     fn it_works2() {
         let s = station_fn(async move |_test: String| Ok(2))
+            .pipe(station_fn(async move |test: i32| Ok(test + 2)));
+        let p = s.execute("Hello".to_string());
+        let ret = block_on(p).unwrap();
+        assert_eq!(ret, 4);
+    }
+
+    #[test]
+    fn it_works_ctx() {
+        let s = station_fn_ctx(async move |_test: String, ctx: &i32| Ok(2), 10)
             .pipe(station_fn(async move |test: i32| Ok(test + 2)));
         let p = s.execute("Hello".to_string());
         let ret = block_on(p).unwrap();

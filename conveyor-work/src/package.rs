@@ -1,5 +1,6 @@
 use conveyor::futures::prelude::*;
 use conveyor::{ConveyorError, OneOf4Future, Promise4};
+use serde_json::{self, Value};
 use std::io::Read;
 use std::pin::Pin;
 use std::sync::Mutex;
@@ -109,6 +110,12 @@ impl IntoPackageContent
 {
     fn into_package_content(self) -> PackageContent {
         PackageContent::Stream(self)
+    }
+}
+
+impl IntoPackageContent for Value {
+    fn into_package_content(self) -> PackageContent {
+        PackageContent::Bytes(serde_json::to_vec(&self).unwrap())
     }
 }
 

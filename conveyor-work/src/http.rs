@@ -23,7 +23,7 @@ macro_rules! method_impl {
     };
 }
 
-#[derive(Debug, Serialize, Deserialize, clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Method {
     GET,
     POST,

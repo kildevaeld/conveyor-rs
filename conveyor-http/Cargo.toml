@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 tokio = { version = "^0.1", features = ["async-await-preview"] }
 reqwest = "^0.9"
-conveyor = { path = "../conveyor", features = ["producer", "work"]}
+conveyor = { path = "../conveyor", features = ["producer"]}
 
 [[example]]
 name = "http"

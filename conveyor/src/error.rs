@@ -18,13 +18,13 @@ impl ConveyorError {
 
 impl fmt::Debug for ConveyorError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ConveyorError: {:?}", self.inner)
+        write!(f, "ConveyorError<{:?}>", self.inner)
     }
 }
 
 impl fmt::Display for ConveyorError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "{}", self.inner.to_string())
     }
 }
 

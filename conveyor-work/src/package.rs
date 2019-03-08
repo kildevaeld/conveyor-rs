@@ -62,7 +62,7 @@ where
     values: Vec<V>,
 }
 
-impl<Str: 'static, V> ConcatStream<Str, V>
+impl<Str, V> ConcatStream<Str, V>
 where
     Str: Stream<Item = Result<Vec<V>>>,
 {

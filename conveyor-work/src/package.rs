@@ -1,6 +1,7 @@
 use conveyor::futures::prelude::*;
 use conveyor::{ConveyorError, OneOf4Future, Promise4};
 use serde_json::{self, Value};
+use std::fmt;
 use std::io::Read;
 use std::pin::Pin;
 use std::sync::Mutex;
@@ -35,6 +36,18 @@ impl PackageContent {
     }
 }
 
+impl fmt::Debug for PackageContent {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let lit = match self {
+            PackageContent::Bytes(_) => "Bytes",
+            PackageContent::Empty => "Empty",
+            PackageContent::Reader(_) => "Reader",
+            PackageContent::Stream(_) => "Stream",
+        };
+        write!(f, "{}", lit)
+    }
+}
+
 impl IntoPackageContent for PackageContent {
     fn into_package_content(self) -> PackageContent {
         self
@@ -58,21 +71,22 @@ where
     fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
-        match unsafe { Pin::new_unchecked(&mut this.stream) }.poll_next(waker) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(o) => match o {
-                None => {
-                    let values = std::mem::replace(&mut this.values, Vec::new());
-                    Poll::Ready(Ok(values))
-                }
-                Some(s) => match s {
-                    Ok(s) => {
-                        this.values.extend(s);
-                        Poll::Pending
+        loop {
+            match unsafe { Pin::new_unchecked(&mut this.stream) }.poll_next(waker) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(o) => match o {
+                    None => {
+                        let values = std::mem::replace(&mut this.values, Vec::new());
+                        return Poll::Ready(Ok(values));
                     }
-                    Err(e) => Poll::Ready(Err(e)),
+                    Some(s) => match s {
+                        Ok(s) => {
+                            this.values.extend(s);
+                        }
+                        Err(e) => return Poll::Ready(Err(e)),
+                    },
                 },
-            },
+            };
         }
     }
 }
@@ -123,12 +137,14 @@ impl IntoPackageContent for Value {
 pub struct Package {
     name: String,
     value: Mutex<Option<PackageContent>>,
+    map: typemap::ShareMap,
 }
 
 impl std::fmt::Debug for Package {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut s = f.debug_struct("Package");
         s.field("name", &self.name);
+        s.field("content", &self.value);
         s.finish()
     }
 }
@@ -138,7 +154,16 @@ impl Package {
         Package {
             name: name.as_ref().to_string(),
             value: Mutex::new(Some(value.into_package_content())),
+            map: typemap::TypeMap::custom(),
         }
+    }
+
+    pub fn meta(&self) -> &typemap::ShareMap {
+        &self.map
+    }
+
+    pub fn meta_mut(&mut self) -> &mut typemap::ShareMap {
+        &mut self.map
     }
 
     pub fn name(&self) -> &str {

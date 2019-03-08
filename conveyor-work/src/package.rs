@@ -54,12 +54,24 @@ impl IntoPackageContent for PackageContent {
     }
 }
 
-struct ConcatStream<Str, V>
+pub struct ConcatStream<Str, V>
 where
     Str: Stream<Item = Result<Vec<V>>>,
 {
     stream: Str,
     values: Vec<V>,
+}
+
+impl<Str: 'static, V> ConcatStream<Str, V>
+where
+    Str: Stream<Item = Result<Vec<V>>>,
+{
+    pub fn new(stream: Str) -> ConcatStream<Str, V> {
+        ConcatStream {
+            stream,
+            values: Vec::new(),
+        }
+    }
 }
 
 impl<Str, V> Future for ConcatStream<Str, V>

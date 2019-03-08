@@ -140,10 +140,10 @@ pub struct HttpResponseStream;
 impl Station for HttpResponseStream {
     type Input = HttpResponse;
     type Output =
-        Mutex<Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send + 'static>>>;
+        Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send + 'static>>;
     type Future = conveyor::futures::future::Ready<Result<Self::Output>>;
     fn execute(&self, mut input: Self::Input) -> Self::Future {
-        conveyor::futures::future::ready(Ok(Mutex::new(Box::pin(input.stream()))))
+        conveyor::futures::future::ready(Ok(Box::pin(input.stream())))
     }
 }
 

@@ -96,30 +96,30 @@ impl HttpProducer {
 }
 
 impl Stream for HttpProducer {
-    type Item = ConveyorFuture<
-        ConveyorFuture<
-            ConveyorFuture<HttpFuture, HttpResponseReader, HttpResponse>,
-            ToPackage<Vec<u8>>,
-            Vec<u8>,
-        >,
-        BoxWrap,
-        Package,
-    >;
     // type Item = ConveyorFuture<
     //     ConveyorFuture<
-    //         ConveyorFuture<HttpFuture, HttpResponseStream, HttpResponse>,
-    //         ToPackage<
-    //             std::sync::Mutex<
-    //                 Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
-    //             >,
-    //         >,
-    //         std::sync::Mutex<
-    //             Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
-    //         >,
+    //         ConveyorFuture<HttpFuture, HttpResponseReader, HttpResponse>,
+    //         ToPackage<Vec<u8>>,
+    //         Vec<u8>,
     //     >,
     //     BoxWrap,
     //     Package,
     // >;
+    type Item = ConveyorFuture<
+        ConveyorFuture<
+            ConveyorFuture<HttpFuture, HttpResponseStream, HttpResponse>,
+            ToPackage<
+                std::sync::Mutex<
+                    Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
+                >,
+            >,
+            std::sync::Mutex<
+                Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
+            >,
+        >,
+        BoxWrap,
+        Package,
+    >;
 
     fn poll_next(self: Pin<&mut Self>, _waker: &Waker) -> Poll<Option<Self::Item>> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
@@ -133,8 +133,8 @@ impl Stream for HttpProducer {
         let chain = this
             .client
             .clone()
-            .pipe(HttpResponseReader)
-            //.pipe(HttpResponseStream)
+            //.pipe(HttpResponseReader)
+            .pipe(HttpResponseStream)
             .pipe(to_package(next.url.as_str()));
 
         let chain = if next.station.is_some() {

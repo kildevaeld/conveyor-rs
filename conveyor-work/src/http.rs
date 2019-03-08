@@ -2,7 +2,7 @@ use super::package::{to_package, Package, ToPackage};
 use super::utils::{BoxWrap, BoxedStation};
 use conveyor::futures::prelude::*;
 use conveyor::{Chain, ConveyorError, ConveyorFuture, Result, Station};
-use conveyor_http::{HeaderMap, HttpFuture, HttpResponse, HttpResponseReader};
+use conveyor_http::{HeaderMap, HttpFuture, HttpResponse, HttpResponseReader, HttpResponseStream};
 use hyper_serde;
 use std::collections::VecDeque;
 use std::pin::Pin;
@@ -96,30 +96,27 @@ impl HttpProducer {
 }
 
 impl Stream for HttpProducer {
-    // type Item = ConveyorFuture<
-    //     ConveyorFuture<
-    //         ConveyorFuture<HttpFuture, HttpResponseReader, HttpResponse>,
-    //         ToPackage<Vec<u8>>,
-    //         Vec<u8>,
-    //     >,
-    //     BoxWrap,
-    //     Package,
-    // >;
     type Item = ConveyorFuture<
         ConveyorFuture<
-            ConveyorFuture<HttpFuture, HttpResponseStream, HttpResponse>,
-            ToPackage<
-                std::sync::Mutex<
-                    Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
-                >,
-            >,
-            std::sync::Mutex<
-                Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
-            >,
+            ConveyorFuture<HttpFuture, HttpResponseReader, HttpResponse>,
+            ToPackage<Vec<u8>>,
+            Vec<u8>,
         >,
         BoxWrap,
         Package,
     >;
+    // type Item = ConveyorFuture<
+    //     ConveyorFuture<
+    //         ConveyorFuture<HttpFuture, HttpResponseStream, HttpResponse>,
+    //         ToPackage<
+    //                 Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>
+    //         >,
+    //             Pin<Box<conveyor::futures::stream::Stream<Item = Result<Vec<u8>>> + Send>>,
+            
+    //     >,
+    //     BoxWrap,
+    //     Package,
+    // >;
 
     fn poll_next(self: Pin<&mut Self>, _waker: &Waker) -> Poll<Option<Self::Item>> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
@@ -133,8 +130,8 @@ impl Stream for HttpProducer {
         let chain = this
             .client
             .clone()
-            //.pipe(HttpResponseReader)
-            .pipe(HttpResponseStream)
+            .pipe(HttpResponseReader)
+            //.pipe(HttpResponseStream)
             .pipe(to_package(next.url.as_str()));
 
         let chain = if next.station.is_some() {
@@ -161,7 +158,7 @@ mod tests {
     use tokio;
 
     #[test]
-    fn it_works() {
+    fn http_producer() {
         tokio::run_async(
             async {
                 let producer = HttpProducer::new(vec![

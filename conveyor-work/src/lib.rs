@@ -1,4 +1,4 @@
-#![feature(async_await, await_macro, futures_api)]
+#![feature(async_await, async_closure)]
 
 #[macro_use]
 extern crate serde_derive;

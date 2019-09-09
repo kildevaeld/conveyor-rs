@@ -3,7 +3,7 @@ use super::futures_utils::Promise;
 use futures::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::task::{Poll, Waker as LocalWaker};
+use std::task::{Context,Poll};
 
 pub trait Station {
     type Input;
@@ -81,7 +81,7 @@ where
     N: Station<Input = O>,
 {
     type Output = Result<N::Output>;
-    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, lw: &mut Context) -> Poll<Self::Output> {
         let mut this = unsafe { Pin::get_unchecked_mut(self) };
 
         loop {

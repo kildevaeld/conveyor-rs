@@ -1,7 +1,7 @@
 use futures::prelude::*;
 use std::collections::VecDeque;
 use std::pin::Pin;
-use std::task::{Poll, Waker};
+use std::task::{Poll, Context};
 
 pub struct ConcurrentStream<S>
 where
@@ -36,7 +36,7 @@ where
 {
     type Item = <<S as Stream>::Item as Future>::Output;
 
-    fn poll_next(self: Pin<&mut Self>, waker: &Waker) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Option<Self::Item>> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         if this.max == 0 || this.p.as_ref().unwrap().len() < this.max {

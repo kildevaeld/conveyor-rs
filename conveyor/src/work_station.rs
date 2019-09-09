@@ -7,7 +7,7 @@ use futures_old::{
     Async, Future as OldFuture,
 };
 use std::pin::Pin;
-use std::task::{Poll, Waker};
+use std::task::{Poll, Context};
 use std::thread;
 
 pub struct WorkStation<V: Send, O: Send> {
@@ -82,7 +82,7 @@ pub struct WorkStationFuture<O: Send + 'static> {
 
 impl<O: Send + 'static> Future for WorkStationFuture<O> {
     type Output = Result<O>;
-    fn poll(self: Pin<&mut Self>, _waker: &Waker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _waker: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match this.inner.poll() {

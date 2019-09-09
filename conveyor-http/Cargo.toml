@@ -5,7 +5,7 @@ authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-tokio = { version = "^0.1", features = ["async-await-preview"] }
+tokio = { version = "0.2.0-alpha.1"}
 reqwest = "^0.9"
 conveyor = { path = "../conveyor", features = ["producer"]}
 

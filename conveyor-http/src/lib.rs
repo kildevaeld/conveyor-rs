@@ -1,4 +1,6 @@
-#![feature(async_await, await_macro, futures_api)]
+//#![feature(async_await, await_macro, futures_api)]
+#![feature(async_await,async_closure)]
+
 
 use conveyor::futures::Stream as StdStream;
 use conveyor::futures_old::{Async, Future, Stream};
@@ -10,7 +12,7 @@ use std::future::Future as StdFuture;
 use std::mem;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
-use std::task::{Poll, Waker as LocalWaker};
+use std::task::{Poll, Context};
 
 pub use reqwest::{
     r#async::{Chunk, Request, Response},
@@ -52,7 +54,7 @@ pub struct HttpFuture {
 
 impl StdFuture for HttpFuture {
     type Output = Result<HttpResponse>;
-    fn poll(self: Pin<&mut Self>, _lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _lw: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match this.inner.poll() {
@@ -95,7 +97,7 @@ pub struct HttpBodyStream<U>(Box<Stream<Item = U, Error = Error> + Send + 'stati
 
 impl<U> StdStream for HttpBodyStream<U> {
     type Item = Result<U>;
-    fn poll_next(self: Pin<&mut Self>, _waker: &LocalWaker) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, _waker: &mut Context) -> Poll<Option<Self::Item>> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
         match this.0.poll() {
             Ok(Async::NotReady) => Poll::Pending,
@@ -112,7 +114,7 @@ pub struct HttpBodyFuture<U>(Box<Future<Item = U, Error = Error> + Send>);
 
 impl<U> StdFuture for HttpBodyFuture<U> {
     type Output = Result<U>;
-    fn poll(self: Pin<&mut Self>, _lw: &LocalWaker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _lw: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
         match this.0.poll() {
             Ok(Async::NotReady) => Poll::Pending,

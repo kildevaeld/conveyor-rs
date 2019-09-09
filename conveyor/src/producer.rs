@@ -41,19 +41,19 @@ where
         }
     }
 
-    pub async fn run(&mut self) -> Vec<Result<C::Output>> {
-        let mut out = Vec::new();
+    // pub async fn run(&mut self) -> Vec<Result<C::Output>> {
+    //     let mut out = Vec::new();
 
-        loop {
-            let next = match await!(self.stream.next()) {
-                None => break,
-                Some(s) => match s {
-                    Ok(m) => await!(self.chain.execute(m)),
-                    Err(e) => Err(e),
-                },
-            };
-            out.push(next);
-        }
-        out
-    }
+    //     loop {
+    //         let next = match await!(self.stream.next()) {
+    //             None => break,
+    //             Some(s) => match s {
+    //                 Ok(m) => await!(self.chain.execute(m)),
+    //                 Err(e) => Err(e),
+    //             },
+    //         };
+    //         out.push(next);
+    //     }
+    //     out
+    // }
 }

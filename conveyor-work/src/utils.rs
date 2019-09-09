@@ -2,7 +2,7 @@ use super::package::Package;
 use conveyor::futures::prelude::*;
 use conveyor::{ConveyorError, Result, Station};
 use std::pin::Pin;
-use std::task::{Poll, Waker};
+use std::task::{Poll, Context};
 
 pub type BoxedStation = Box<
     Station<
@@ -90,7 +90,7 @@ where
     F: Future<Output = Result<V>>,
 {
     type Output = Result<V>;
-    fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match &mut this.inner {

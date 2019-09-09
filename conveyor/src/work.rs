@@ -8,6 +8,49 @@ pub enum WorkOutput<V> {
     Work(Work<V>),
 }
 
+fn _run<V: 'static>(input: Vec<Work<V>>) -> impl Future<Output = Vec<Result<Vec<WorkOutput<V>>>>> {
+    let stream = futures::stream::iter(input);
+    ConcurrentStream::new(stream.map(|work| work.work.execute(work.data)), 4).collect()
+}
+
+pub fn run<V: 'static>(input: Vec<Work<V>>) -> Pin<Box<Future<Output = Vec<Result<V>>>>> {
+    let fu = _run(input).then(|ret| -> Pin<Box<Future<Output = Vec<Result<V>>>>> {
+        let mut output = Vec::new();
+        let ret = ret
+            .into_iter()
+            .filter_map(|m| match m {
+                Ok(s) => Some(
+                    s.into_iter()
+                        .filter_map(|m| match m {
+                            WorkOutput::Result(r) => {
+                                output.push(Ok(r));
+                                None
+                            }
+                            WorkOutput::Work(w) => Some(w),
+                        })
+                        .collect::<Vec<_>>(),
+                ),
+                Err(e) => {
+                    output.push(Err(e));
+                    None
+                }
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        if ret.is_empty() {
+            return Box::pin(future::ready(output));
+        }
+
+        Box::pin(run(ret).map(|mut m| {
+            output.append(&mut m);
+            output
+        }))
+    });
+
+    Box::pin(fu)
+}
+
 pub type WorkBox<V> = Box<
     Station<
             Input = V,
@@ -65,7 +108,49 @@ impl Worker {
         ConcurrentStream::new(stream.map(|work| work.work.execute(work.data)), 4).collect()
     }
 
-    pub async fn run<V: 'static>(&self, input: Vec<Work<V>>) -> Vec<Result<V>> {
+    pub fn run<V: 'static>(
+        &self,
+        input: Vec<Work<V>>,
+    ) -> Pin<Box<Future<Output = Vec<Result<V>>>>> {
+        // let fu = self._run(input).then(|ret| -> Pin<Box<Future<Output = Vec<Result<V>>>>> {
+        //     let mut output = Vec::new();
+        //     let ret = ret
+        //         .into_iter()
+        //         .filter_map(|m| match m {
+        //             Ok(s) => Some(
+        //                 s.into_iter()
+        //                     .filter_map(|m| match m {
+        //                         WorkOutput::Result(r) => {
+        //                             output.push(Ok(r));
+        //                             None
+        //                         }
+        //                         WorkOutput::Work(w) => Some(w),
+        //                     })
+        //                     .collect::<Vec<_>>(),
+        //             ),
+        //             Err(e) => {
+        //                 output.push(Err(e));
+        //                 None
+        //             }
+        //         })
+        //         .flatten()
+        //         .collect::<Vec<_>>();
+
+        //     if ret.is_empty() {
+        //         return  Box::pin(future::ready(output));
+        //     }
+
+        //     Box::pin(self.run(ret).map(|mut m| {
+        //         output.append(&mut m);
+        //         output
+        //     }))
+        // });
+
+        // Box::pin(fu)
+        run(input)
+    }
+
+    /*pub async fn run<V: 'static>(&self, input: Vec<Work<V>>) -> Vec<Result<V>> {
         let mut ret = input;
         let mut output = Vec::new();
         loop {
@@ -96,7 +181,7 @@ impl Worker {
             }
         }
         output
-    }
+    }*/
 }
 
 #[cfg(test)]

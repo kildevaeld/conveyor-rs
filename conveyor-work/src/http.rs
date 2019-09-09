@@ -6,7 +6,7 @@ use conveyor_http::{HeaderMap, HttpFuture, HttpResponse, HttpResponseReader, Htt
 use hyper_serde;
 use std::collections::VecDeque;
 use std::pin::Pin;
-use std::task::{Poll, Waker};
+use std::task::{Poll, Context};
 use url::Url;
 use url_serde;
 
@@ -118,7 +118,7 @@ impl Stream for HttpProducer {
     //     Package,
     // >;
 
-    fn poll_next(self: Pin<&mut Self>, _waker: &Waker) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, _waker: &mut Context) -> Poll<Option<Self::Item>> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         if this.request.is_empty() {
@@ -139,7 +139,7 @@ impl Stream for HttpProducer {
             chain.pipe(boxwrap!(m))
         } else {
             chain.pipe(boxwrap!(conveyor::into_box(conveyor::station_fn(
-                async move |p: Package| Ok(p),
+                |p: Package| future::ready(Ok(p)),
             ))))
         };
 
@@ -156,12 +156,13 @@ mod tests {
     use conveyor::station_fn;
     use conveyor::{ConcurrentStream, WorkStation};
     use tokio;
+    use std::error::Error;
+    use std::result::Result;
 
     #[test]
-    fn http_producer() {
-        tokio::run_async(
-            async {
-                let producer = HttpProducer::new(vec![
+    #[tokio::main]
+    async fn http_producer() -> Result<(), Box<dyn Error>>  {
+        let producer = HttpProducer::new(vec![
                     HttpOptions::get("https://skuffesalg.nu/")
                         .unwrap()
                         .station(station_fn(async move |p: Package| {
@@ -179,7 +180,7 @@ mod tests {
                     .pipe(station_fn(async move |mut m: Package| {
                         println!("done {}", m.name());
                         let name = m.name().to_string();
-                        let value = await!(m.read_content())?;
+                        let value = m.read_content().await?;
                         println!("done2 {}", m.name());
                         Ok(Package::new(name, value))
                     }))
@@ -194,12 +195,12 @@ mod tests {
 
                 let stream = ConcurrentStream::new(stream, 4);
 
-                let ret = await!(stream.collect::<Vec<_>>());
+                let ret = stream.collect::<Vec<_>>().await;
 
                 for r in ret {
                     println!("ret {}", r.unwrap().name());
                 }
-            },
-        );
+
+                Ok(())
     }
 }

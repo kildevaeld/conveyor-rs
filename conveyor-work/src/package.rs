@@ -5,7 +5,7 @@ use std::fmt;
 use std::io::Read;
 use std::pin::Pin;
 use std::sync::Mutex;
-use std::task::{Poll, Waker};
+use std::task::{Context, Poll};
 
 pub enum PackageContent {
     Bytes(Vec<u8>),
@@ -80,7 +80,7 @@ where
 {
     type Output = Result<Vec<V>>;
 
-    fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         loop {
@@ -196,13 +196,13 @@ impl Package {
         self
     }
 
-    pub async fn read_content(&mut self) -> Result<Vec<u8>> {
+    pub fn read_content(&mut self) -> impl Future<Output = Result<Vec<u8>>> {
         // let body = mem::replace(self.value.lock().unwrap().body_mut(), Decoder::empty());
         let content = std::mem::replace(
             self.value.lock().unwrap().as_mut().unwrap(),
             PackageContent::Empty,
         );
-        await!(content.into_future())
+        content.into_future()
     }
 }
 

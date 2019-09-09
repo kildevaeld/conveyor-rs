@@ -1,6 +1,6 @@
 use futures::prelude::*;
 use std::pin::Pin;
-use std::task::{Poll, Waker};
+use std::task::{Poll, Context};
 
 pub enum Promise<T1, T2> {
     First(T1),
@@ -19,7 +19,7 @@ impl<T1: Future<Output = V>, T2: Future<Output = V>, V> OneOfFuture<T1, T2, V> {
 
 impl<T1: Future<Output = V>, T2: Future<Output = V>, V> Future for OneOfFuture<T1, T2, V> {
     type Output = V;
-    fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match &mut this.inner {
@@ -51,7 +51,7 @@ impl<T1: Future<Output = V>, T2: Future<Output = V>, T3: Future<Output = V>, V> 
     for OneOf3Future<T1, T2, T3, V>
 {
     type Output = V;
-    fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match &mut this.inner {
@@ -101,7 +101,7 @@ impl<
     > Future for OneOf4Future<T1, T2, T3, T4, V>
 {
     type Output = V;
-    fn poll(self: Pin<&mut Self>, waker: &Waker) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Self::Output> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match &mut this.inner {

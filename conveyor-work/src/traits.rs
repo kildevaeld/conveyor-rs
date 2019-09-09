@@ -3,7 +3,7 @@ use conveyor::futures::prelude::*;
 use conveyor::{OneOfFuture, Promise, Result, Station};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::task::{Poll, Waker};
+use std::task::{Poll, Context};
 
 pub trait ChainStreamer: Stream + Sized
 where
@@ -38,7 +38,7 @@ where
 {
     type Item = Pin<Box<Future<Output = Result<Package>> + Send>>;
 
-    fn poll_next(self: Pin<&mut Self>, waker: &Waker) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, waker: &mut Context) -> Poll<Option<Self::Item>> {
         let this = unsafe { Pin::get_unchecked_mut(self) };
 
         match unsafe { Pin::new_unchecked(&mut this.stream) }.poll_next(waker) {
